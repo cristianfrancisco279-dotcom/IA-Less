@@ -2,3 +2,6 @@ flask>=2.2
 python-dotenv>=1.0
 requests>=2.31
 gunicorn>=21.2
+openai>=1.0.0
+google-generativeai>=0.3.0
+groq>=0.9.0
