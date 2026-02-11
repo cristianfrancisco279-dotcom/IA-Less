@@ -3,7 +3,8 @@ from dotenv import load_dotenv
 import os
 import uuid
 import json
-from datetime import datetime
+from datetime import datetime, timezone
+from email.utils import parsedate_to_datetime
 from urllib.parse import urlparse
 from ai import AIProvider
 import requests
@@ -118,8 +119,17 @@ def _parse_rss(url, limit=8):
         for item in root.findall(".//item"):
             title = (item.findtext("title") or "").strip()
             link = (item.findtext("link") or "").strip()
+            pub = item.findtext("pubDate") or item.findtext("{http://purl.org/dc/elements/1.1/}date") or ""
+            dt = None
+            if pub:
+                try:
+                    dt = parsedate_to_datetime(pub)
+                except:
+                    dt = None
+            if dt and not dt.tzinfo:
+                dt = dt.replace(tzinfo=timezone.utc)
             if title and link:
-                items.append({"title": title, "link": link})
+                items.append({"title": title, "link": link, "published_at": (dt.isoformat() if dt else None)})
             if len(items) >= limit:
                 break
         if not items:
@@ -127,8 +137,18 @@ def _parse_rss(url, limit=8):
                 title = (entry.findtext("{http://www.w3.org/2005/Atom}title") or "").strip()
                 link_el = entry.find("{http://www.w3.org/2005/Atom}link")
                 link = (link_el.get("href") if link_el is not None else "") or ""
+                pub = entry.findtext("{http://www.w3.org/2005/Atom}updated") or entry.findtext("{http://www.w3.org/2005/Atom}published") or ""
+                dt = None
+                if pub:
+                    try:
+                        p = pub.replace("Z", "+00:00")
+                        dt = datetime.fromisoformat(p)
+                    except:
+                        dt = None
+                if dt and not dt.tzinfo:
+                    dt = dt.replace(tzinfo=timezone.utc)
                 if title and link:
-                    items.append({"title": title, "link": link})
+                    items.append({"title": title, "link": link, "published_at": (dt.isoformat() if dt else None)})
                 if len(items) >= limit:
                     break
         return items
@@ -163,7 +183,27 @@ def _fetch_topic(topic):
     merged = []
     for u in urls:
         merged.extend(_parse_rss(u, limit=8))
-    return merged[:16]
+    def to_dt(x):
+        s = x.get("published_at")
+        if not s:
+            return None
+        try:
+            d = datetime.fromisoformat(s)
+            return d
+        except:
+            return None
+    now = datetime.utcnow().replace(tzinfo=timezone.utc)
+    filtered = []
+    for it in merged:
+        d = to_dt(it)
+        if not d:
+            filtered.append(it)
+            continue
+        d_utc = d.astimezone(timezone.utc)
+        if (now - d_utc).days <= 2:
+            filtered.append(it)
+    filtered.sort(key=lambda x: (to_dt(x) or datetime.min.replace(tzinfo=timezone.utc)), reverse=True)
+    return filtered[:16]
 
 def _refresh_news():
     while True:
@@ -228,7 +268,20 @@ def responder():
         def br_date(d):
             meses = ["janeiro","fevereiro","março","abril","maio","junho","julho","agosto","setembro","outubro","novembro","dezembro"]
             return f"{d.day:02d} de {meses[d.month-1]} de {d.year}"
-        hoje = br_date(datetime.utcnow())
+        hoje_dt = datetime.utcnow().replace(tzinfo=timezone.utc)
+        hoje = br_date(hoje_dt)
+        def when_label(s):
+            if not s:
+                return ""
+            try:
+                d = datetime.fromisoformat(s).astimezone(timezone.utc)
+            except:
+                return ""
+            if d.date() == hoje_dt.date():
+                return "hoje"
+            if (hoje_dt.date() - d.date()).days == 1:
+                return "ontem"
+            return br_date(d)
         def cat(title):
             t = title.lower()
             econ_kw = ["ação","ações","bolsa","mercado","índice","sp500","s&p","lucro","resultado","guidance","economia","inflação","criptomoeda","bitcoin","ethereum","xrp","btc","eth"]
@@ -248,7 +301,7 @@ def responder():
             src = host_name(it["link"])
             txt.append(f"{src}")
             txt.append(f"{it['title']}")
-            txt.append(f"hoje")
+            txt.append(when_label(it.get("published_at")))
         if economy:
             txt.append("")
             txt.append("🗞️ Economia e mercados")
