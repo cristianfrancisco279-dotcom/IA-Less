@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <title>Status do Less</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <div class="chat">
+        <h2>Status do Less</h2>
+        <div id="statusBox" style="padding:16px"></div>
+        <div class="input">
+            <a href="/" id="backBtn" class="statuslink">Voltar ao Chat</a>
+        </div>
+    </div>
+    <script>
+    async function load(){
+      const r = await fetch("/status");
+      const j = await r.json();
+      const el = document.getElementById("statusBox");
+      el.textContent = JSON.stringify(j);
+    }
+    load();
+    </script>
+</body>
+</html>

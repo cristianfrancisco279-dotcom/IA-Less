@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <title>Less</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <div class="statusbar">
+        <span id="statusText">Status: verificando…</span>
+        <a href="/status-ui" class="statuslink">Ver diagnóstico</a>
+        <span id="autoNewsInd" class="statuschip">Auto notícias: Ativo</span>
+    </div>
+    <div class="layout">
+        <div class="sidebar">
+            <div class="sideheader">
+                <span>Conversas</span>
+                <button id="newChat">Novo chat</button>
+            </div>
+            <div id="chatList"></div>
+        </div>
+        <div class="chat">
+        <h2>Less</h2>
+        <div id="messages"></div>
+        <div class="input">
+            <input id="text" placeholder="Digite sua pergunta..." />
+            <button id="send">Enviar</button>
+        </div>
+        </div>
+    </div>
+    <script src="{{ url_for('static', filename='script.js') }}"></script>
+</body>
+</html>

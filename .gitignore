@@ -1,0 +1,14 @@
+# Python / Flask
+__pycache__/
+*.pyc
+.venv/
+env/
+venv/
+
+# Local data and secrets
+data/chats/
+.env
+
+# Editor/OS
+.DS_Store
+Thumbs.db
