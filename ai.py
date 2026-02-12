@@ -10,7 +10,7 @@ class AIProvider:
         openai_key = os.getenv("OPENAI_API_KEY")
         groq_key = os.getenv("GROQ_API_KEY")
         env_provider = (os.getenv("AI_PROVIDER") or "").lower()
-        self.provider = env_provider or ("openai" if openai_key else ("groq" if groq_key else "openai"))
+        self.provider = env_provider or ("groq" if groq_key else ("openai" if openai_key else "openai"))
         self.model = os.getenv("AI_MODEL")
         self.client = None
         self.ready = False
