@@ -54,10 +54,16 @@ class AIProvider:
             resp=self.session.post(url,json=payload,timeout=30)
             if not resp.ok:
                 txt=resp.text
+                if resp.status_code==401:
+                    return "A IA está indisponível. Verifique GROQ_API_KEY e AI_PROVIDER=groq."
                 if resp.status_code in (400,404) and ("model_decommissioned" in txt or "model_not_found" in txt):
                     self.model=self._pick_groq_model()
                     payload["model"]=self.model
                     resp=self.session.post(url,json=payload,timeout=30)
+                    if not resp.ok:
+                        if resp.status_code==401:
+                            return "A IA está indisponível. Verifique GROQ_API_KEY e AI_PROVIDER=groq."
+                        raise Exception(f"{resp.status_code}: {resp.text}")
                 else:
                     raise Exception(f"{resp.status_code}: {txt}")
             data=resp.json()
